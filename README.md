@@ -4,7 +4,7 @@
 
 A Python-first tool to generate land cover exports and quickly create a 3D-style, hillshaded PNG from Sentinel-2 land cover tiles and Copernicus elevation data — for any country, or a custom area you draw, upload, or type in yourself.
 
-Inspired by the original `rayshader` R workflow.
+Inspired by [`rayshader`](https://github.com/tylermorganwall/rayshader), Tyler Morgan-Wall's R package for 2D/3D data visualization — this project's hillshade-and-color rendering technique is the same one rayshader uses.
 
 ![Example: Nepal rendered in 3D mode](docs/examples/nepal-3d-example.jpg)
 
@@ -99,4 +99,4 @@ Two optional features need the repo owner to configure secrets — everything el
 
 ## Shoutout
 
-Inspired by the original R `rayshader` land cover map workflow, this repo now provides a Python-first export tool for 3D-style PNG generation.
+This project owes its core rendering idea to [`rayshader`](https://github.com/tylermorganwall/rayshader) by [Tyler Morgan-Wall](https://github.com/tylermorganwall) — an R package for producing 2D and 3D data visualizations via raytracing and hillshading. This repo reimplements that hillshade-and-color blend technique in Python as a standalone export tool, rather than depending on rayshader itself (which is R-only).
