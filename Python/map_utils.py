@@ -69,6 +69,9 @@ LAND_COVER_LABELS = {
 }
 DEFAULT_COLOR = (128, 128, 128)
 
+WATERMARK_NAME = "Bishal Dhungana"
+WATERMARK_URL = "https://dbishal13.github.io/"
+
 
 def resolve_country_code(country: str) -> str:
     candidate = country.strip()
@@ -445,7 +448,95 @@ def _draw_legend(image, class_codes):
     return Image.alpha_composite(base, overlay)
 
 
-def save_png(rgb_array: np.ndarray, output_path: Path, land_cover_array: np.ndarray = None) -> None:
+def _draw_watermark(image):
+    """Attribution watermark, bottom-right (legend occupies bottom-left).
+
+    Plain visible text here -- a raster PNG/JPG can't carry a real clickable
+    link. save_pdf() draws the same text as an actual link annotation instead.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    base = image.convert("RGBA")
+    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    scale = max(0.6, min(3.0, base.width / 2000))
+    font_size = round(16 * scale)
+    padding = round(10 * scale)
+    margin = round(16 * scale)
+
+    try:
+        font = ImageFont.load_default(size=font_size)
+    except TypeError:
+        font = ImageFont.load_default()
+
+    text = f"{WATERMARK_NAME} · {WATERMARK_URL.rstrip('/').split('://', 1)[-1]}"
+    text_w = draw.textlength(text, font=font)
+    panel_w = int(text_w + padding * 2)
+    panel_h = int(font_size + padding * 2)
+
+    x0 = base.width - panel_w - margin
+    y0 = base.height - panel_h - margin
+    draw.rounded_rectangle(
+        [x0, y0, x0 + panel_w, y0 + panel_h], radius=round(8 * scale), fill=(255, 255, 255, 200)
+    )
+    draw.text((x0 + padding, y0 + padding), text, fill=(17, 24, 39, 255), font=font)
+
+    return Image.alpha_composite(base, overlay)
+
+
+def save_pdf(image, output_path: Path, title: str = None) -> None:
+    """Compose the rendered map into a print-ready page: a bordered frame,
+    an optional title, the map, and a real clickable attribution link.
+
+    A raster PNG/JPG can never carry an actual hyperlink -- only a format
+    with link annotations (PDF, here) can, which is the whole reason this
+    exists alongside save_png/save_3d_png rather than replacing them.
+    """
+    from PIL import Image as PILImage
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfgen import canvas
+
+    if not isinstance(image, PILImage.Image):
+        image = PILImage.open(image)
+    image = image.convert("RGB")
+
+    img_w_px, img_h_px = image.size
+    # 1 image pixel -> 1 point (not a fixed paper size) so an arbitrarily
+    # shaped AOI's aspect ratio is never cropped or letterboxed; capped so a
+    # full-resolution export doesn't turn into an unwieldy multi-foot page.
+    scale = min(1.0, 1600 / img_w_px)
+    img_w, img_h = img_w_px * scale, img_h_px * scale
+
+    margin = 36  # 0.5in
+    title_h = 40 if title else 0
+    footer_h = 30
+
+    page_w = img_w + margin * 2
+    page_h = img_h + margin * 2 + title_h + footer_h
+
+    c = canvas.Canvas(str(output_path), pagesize=(page_w, page_h))
+
+    c.setLineWidth(1.5)
+    c.rect(margin / 2, margin / 2, page_w - margin, page_h - margin)
+
+    if title:
+        c.setFont("Helvetica-Bold", 18)
+        c.drawCentredString(page_w / 2, page_h - margin - title_h + 14, title)
+
+    c.drawImage(ImageReader(image), margin, margin + footer_h, width=img_w, height=img_h)
+
+    footer_text = f"{WATERMARK_NAME} · {WATERMARK_URL.rstrip('/').split('://', 1)[-1]}"
+    c.setFont("Helvetica", 10)
+    text_w = c.stringWidth(footer_text, "Helvetica", 10)
+    text_x, text_y = page_w / 2 - text_w / 2, margin / 2 + 8
+    c.drawString(text_x, text_y, footer_text)
+    c.linkURL(WATERMARK_URL, (text_x, text_y - 2, text_x + text_w, text_y + 10), relative=0)
+
+    c.save()
+
+
+def save_png(rgb_array: np.ndarray, output_path: Path, land_cover_array: np.ndarray = None):
     from PIL import Image
 
     image = Image.fromarray(rgb_array, mode="RGB").convert("RGBA")
@@ -453,10 +544,13 @@ def save_png(rgb_array: np.ndarray, output_path: Path, land_cover_array: np.ndar
     if land_cover_array is not None:
         image = _draw_legend(image, np.unique(land_cover_array).tolist())
 
+    image = _draw_watermark(image)
+
     if Path(output_path).suffix.lower() in (".jpg", ".jpeg"):
         image = image.convert("RGB")
 
     image.save(output_path)
+    return image
 
 
 def save_3d_png(
@@ -467,7 +561,7 @@ def save_3d_png(
     azimuth: float = 315.0,
     altitude: float = 45.0,
     land_cover_array: np.ndarray = None,
-) -> None:
+):
     """Render land cover colored by a hillshaded relief derived from elevation.
 
     A literal tilted 3D mesh (e.g. matplotlib's plot_surface) can't render a
@@ -511,9 +605,13 @@ def save_3d_png(
     image = Image.fromarray(shaded_rgb, mode="RGB")
 
     if land_cover_array is not None:
-        image = _draw_legend(image.convert("RGBA"), np.unique(land_cover_array).tolist()).convert("RGB")
+        image = _draw_legend(image.convert("RGBA"), np.unique(land_cover_array).tolist())
+    else:
+        image = image.convert("RGBA")
+    image = _draw_watermark(image).convert("RGB")
 
     image.save(output_path)
+    return image
 
 
 def create_export_info(country: str, output_path: Path) -> None:

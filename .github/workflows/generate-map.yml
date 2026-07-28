@@ -12,13 +12,18 @@ on:
         required: false
         default: ""
       output_format:
-        description: "Output image format"
+        description: "Output format"
         required: true
         default: "png"
         type: choice
         options:
           - png
           - jpg
+          - pdf
+      title:
+        description: "Title printed at the top of a PDF export (ignored for png/jpg)"
+        required: false
+        default: ""
       mode:
         description: "Export mode for the generated image"
         required: true
@@ -57,6 +62,7 @@ jobs:
           OUTPUT_FORMAT: ${{ github.event.inputs.output_format }}
           MODE: ${{ github.event.inputs.mode }}
           AGGREGATE: ${{ github.event.inputs.aggregate }}
+          TITLE: ${{ github.event.inputs.title }}
         run: |
           mkdir -p out
           python Python/generate_map.py \
@@ -64,7 +70,8 @@ jobs:
             --aoi-geojson "$AOI_GEOJSON" \
             --output "out/land-cover-map.$OUTPUT_FORMAT" \
             --mode "$MODE" \
-            --aggregate "$AGGREGATE"
+            --aggregate "$AGGREGATE" \
+            --title "$TITLE"
       - name: Upload generated artifact
         uses: actions/upload-artifact@v4
         with:

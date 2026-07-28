@@ -13,6 +13,7 @@ from map_utils import (
     load_elevation,
     load_masked_land_cover,
     save_3d_png,
+    save_pdf,
     save_png,
 )
 
@@ -55,6 +56,11 @@ def parse_args() -> argparse.Namespace:
         default="data",
         help="Directory to cache the country geometry lookup (land cover/elevation are streamed, not cached).",
     )
+    parser.add_argument(
+        "--title",
+        default=None,
+        help="Title printed at the top of a PDF export (--output ending in .pdf). Ignored for png/jpg.",
+    )
 
     return parser.parse_args()
 
@@ -64,8 +70,17 @@ def main() -> None:
     args = parse_args()
 
     output_path = Path(args.output)
+    if args.mode == "3d":
+        output_path = output_path.with_name(output_path.stem + "-3d" + output_path.suffix)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     land_cover_dir = Path(args.data_dir)
+
+    # A PDF is a print-ready page (border, title, real clickable attribution
+    # link) built around the same raster save_png/save_3d_png produce -- not
+    # a distinct render path. That raster is a transient intermediate here,
+    # not a second deliverable, so it's removed once the PDF is composed.
+    is_pdf = output_path.suffix.lower() == ".pdf"
+    raster_path = output_path.with_suffix(".png") if is_pdf else output_path
 
     if args.aoi_geojson:
         logging.info("Using custom AOI from GeoJSON input")
@@ -88,8 +103,6 @@ def main() -> None:
     rgb = land_cover_to_rgb(land_cover)
 
     if args.mode == "3d":
-        output_path = output_path.with_name(output_path.stem + "-3d" + output_path.suffix)
-
         logging.info("Finding elevation tiles for this area")
         elevation_tile_urls = find_elevation_tile_urls(country_gdf)
 
@@ -100,10 +113,15 @@ def main() -> None:
 
         logging.info("Saving 3D export PNG")
         pixel_size = abs(land_cover_transform.a)
-        save_3d_png(rgb, elevation, output_path, pixel_size=pixel_size, land_cover_array=land_cover)
+        image = save_3d_png(rgb, elevation, raster_path, pixel_size=pixel_size, land_cover_array=land_cover)
     else:
         logging.info("Saving 2D export PNG")
-        save_png(rgb, output_path, land_cover_array=land_cover)
+        image = save_png(rgb, raster_path, land_cover_array=land_cover)
+
+    if is_pdf:
+        logging.info("Composing print-ready PDF")
+        save_pdf(image, output_path, title=args.title or region_label)
+        raster_path.unlink(missing_ok=True)
 
     create_export_info(region_label, output_path)
 

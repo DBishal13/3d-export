@@ -89,6 +89,7 @@
           <select id="output-format">
             <option value="png">PNG</option>
             <option value="jpg">JPG</option>
+            <option value="pdf">PDF (print-ready, with a clickable credit link)</option>
           </select>
         </label>
         <label>
@@ -101,6 +102,10 @@
         <label>
           Downsample factor:
           <input id="aggregate" type="number" min="1" value="5" />
+        </label>
+        <label>
+          Map title (optional, PDF only):
+          <input id="title" type="text" placeholder="Defaults to the area name" />
         </label>
         <label>
           Email the finished map to (optional):
@@ -626,6 +631,7 @@
         mode: document.getElementById("mode").value,
         aggregate: document.getElementById("aggregate").value,
         email: document.getElementById("email").value.trim(),
+        title: document.getElementById("title").value.trim(),
       };
 
       runButton.disabled = true;

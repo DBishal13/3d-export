@@ -10,7 +10,7 @@ const WORKFLOW_FILE = "generate-map.yml";
 const REF = "main";
 const ALLOWED_ORIGIN = "https://dbishal13.github.io";
 
-const ALLOWED_INPUT_KEYS = ["country_code", "aoi_geojson", "output_format", "mode", "aggregate", "email"];
+const ALLOWED_INPUT_KEYS = ["country_code", "aoi_geojson", "output_format", "mode", "aggregate", "email", "title"];
 const PER_IP_LIMIT_PER_HOUR = 5;
 const GLOBAL_LIMIT_PER_DAY = 50;
 

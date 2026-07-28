@@ -30,7 +30,7 @@ Then open `out/land-cover-map-3d.png`.
 1. Open the workflow dispatch page:
    - https://github.com/DBishal13/3d-export/actions/workflows/generate-map.yml
 2. Click **Run workflow**.
-3. Enter a `country_code` (or an `aoi_geojson` to override it with a custom area), choose `output_format` and `mode`, and set an `aggregate` value.
+3. Enter a `country_code` (or an `aoi_geojson` to override it with a custom area), choose `output_format` and `mode`, and set an `aggregate` value. Pick `pdf` for a print-ready page with a title and a real clickable credit link (PNG/JPG carry the same credit as plain, non-clickable watermark text).
 4. Run the workflow.
 5. After the job completes, open the workflow run and download the generated artifact from the summary panel.
 
@@ -73,10 +73,13 @@ A workflow is available at `.github/workflows/generate-map.yml` and can be trigg
 Input values:
 - `country_code` — country name or ISO code (ignored if `aoi_geojson` is set)
 - `aoi_geojson` — a custom area of interest as a GeoJSON Geometry/Feature/FeatureCollection, overriding `country_code`
-- `output_format` — `png` or `jpg`
+- `output_format` — `png`, `jpg`, or `pdf` (a print-ready page: bordered frame, title, and a real clickable credit link — impossible in a raster image)
 - `mode` — `3d` (hillshaded relief) or `2d` (flat)
 - `aggregate` — downsample factor for output size
+- `title` — optional; printed at the top of a PDF export (ignored for png/jpg), defaults to the area name
 - `email` — optional; if set (and the repo owner has configured Gmail secrets, see below), the finished file is emailed as an attachment
+
+Every export (any format) carries a small "Bishal Dhungana · dbishal13.github.io" credit in the corner; in the PDF it's also a real clickable link.
 
 The workflow uploads the generated image as an artifact regardless.
 
