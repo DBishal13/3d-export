@@ -1,0 +1,173 @@
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: Inter, system-ui, sans-serif;
+  margin: 0;
+  background: #f6f8fb;
+  color: #111827;
+}
+
+#aoi-map {
+  position: fixed;
+  inset: 0;
+}
+
+main {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1;
+  width: min(400px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+
+.panel {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 24px;
+  margin-top: 20px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+}
+
+label {
+  display: block;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea,
+button,
+.action-button {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  font-size: 1rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+textarea {
+  resize: vertical;
+}
+
+input[type="file"] {
+  padding: 8px 10px;
+}
+
+details.panel summary {
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+details.panel[open] summary {
+  margin-bottom: 12px;
+}
+
+.bbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+  margin-bottom: 16px;
+}
+
+.bbox-grid label {
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+button,
+.action-button {
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+  border: none;
+  margin-top: 24px;
+  text-decoration: none;
+  text-align: center;
+}
+
+button:hover,
+.action-button:hover {
+  background: #1d4ed8;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.hint {
+  margin: -8px 0 16px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.hint a {
+  color: #2563eb;
+}
+
+.hint code {
+  background: #f3f4f6;
+  padding: 1px 5px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.button-row {
+  display: flex;
+  gap: 12px;
+}
+
+.button-row > * {
+  margin-top: 0;
+}
+
+.secondary-button {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.secondary-button:hover {
+  background: #f3f4f6;
+}
+
+.secondary-link {
+  background: white;
+  color: #2563eb;
+  border: 1px solid #2563eb;
+}
+
+.secondary-link:hover {
+  background: #eff6ff;
+}
+
+.status {
+  min-height: 1.2em;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.status.success {
+  color: #15803d;
+}
+
+.status.error {
+  color: #b91c1c;
+}

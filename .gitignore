@@ -1,0 +1,6 @@
+*land-cover-map-3d.png
+/data
+/outputs
+/out
+__pycache__/
+*.pyc

@@ -1,0 +1,6 @@
+geopandas
+rasterio
+numpy
+Pillow
+requests
+pycountry
