@@ -553,6 +553,59 @@ def save_png(rgb_array: np.ndarray, output_path: Path, land_cover_array: np.ndar
     return image
 
 
+def _cast_shadow_mask(elevation: np.ndarray, pixel_size: float, azimuth: float, altitude: float) -> np.ndarray:
+    """Boolean mask of pixels where nearer-to-the-sun terrain blocks the sun's
+    ray -- real cast shadows (mountain-onto-valley), unlike the per-pixel-only
+    slope/aspect shading in save_3d_png, which never looks at neighboring
+    terrain at all.
+
+    Vectorized rather than raymarched per pixel: rotate the elevation grid so
+    the sun's compass direction aligns with the column axis, then a single
+    cumulative-max scan per row (np.maximum.accumulate) finds every pixel
+    that sits below some closer-to-the-sun ridge's projected "shadow line" --
+    mathematically equivalent to marching a ray from each pixel toward the
+    sun and checking for terrain in the way, just done for the whole grid in
+    one pass instead of a per-pixel loop.
+    """
+    from scipy.ndimage import rotate as ndi_rotate
+
+    h, w = elevation.shape
+    # Rotate so the sun's compass direction aligns with +x (increasing
+    # column index), matching the azimuth/aspect convention used elsewhere
+    # in this file (0=N, 90=E, clockwise).
+    rotate_angle = 90.0 - azimuth
+
+    rotated = ndi_rotate(elevation, rotate_angle, reshape=True, order=1, mode="nearest")
+
+    # After rotation, +column = toward the sun's compass direction. A ray
+    # that just reaches the ground at column p (height z(p)) came from the
+    # sun's direction, so extended backward toward larger p (closer to the
+    # sun) it gets higher: height(p') = z(p) + (p' - p) * tan(altitude) for
+    # p' > p. Column q (q < p, farther from the sun) is shadowed by that
+    # terrain if the ray's height at q would still be above ground there:
+    # z(p) + (q - p)*tan(alt) > z(q)  <=>  z(p) - p*tan(alt) > z(q) - q*tan(alt).
+    # So define H(x) = z(x) - x*tan(alt); q is shadowed if any p > q has
+    # H(p) > H(q) -- i.e. the max of H strictly to the sun-ward side.
+    tan_alt = np.tan(np.radians(altitude))
+    cols = np.arange(rotated.shape[1], dtype=np.float32) * pixel_size
+    H = rotated - cols[None, :] * tan_alt
+
+    # Max of H over strictly-greater column indices: reverse, cumulative max,
+    # reverse back, then shift so each position excludes itself.
+    max_from_sunward = np.maximum.accumulate(H[:, ::-1], axis=1)[:, ::-1]
+    max_strictly_sunward = np.full_like(H, -np.inf)
+    max_strictly_sunward[:, :-1] = max_from_sunward[:, 1:]
+
+    shadow_rot = (max_strictly_sunward > H + 1e-3).astype(np.float32)
+
+    shadow_back = ndi_rotate(shadow_rot, -rotate_angle, reshape=True, order=1, mode="constant", cval=0.0)
+    dh = (shadow_back.shape[0] - h) // 2
+    dw = (shadow_back.shape[1] - w) // 2
+    shadow_back = shadow_back[dh:dh + h, dw:dw + w]
+
+    return shadow_back > 0.5
+
+
 def save_3d_png(
     rgb_array: np.ndarray,
     elevation_array: np.ndarray,
@@ -587,6 +640,13 @@ def save_3d_png(
     )
     shaded = np.clip(shaded, 0.0, 1.0, out=shaded)
     shaded = 0.35 + 0.65 * shaded  # keep shadowed areas from going fully black
+
+    # Cast shadows on top of the per-pixel slope/aspect shading above: a
+    # steep sun-facing slope gets bright lambertian shading even if a taller
+    # ridge in front of it actually blocks the sun, since that shading never
+    # looks at neighboring terrain. This darkens exactly those pixels.
+    cast_shadow = _cast_shadow_mask(elevation, pixel_size, azimuth, altitude)
+    shaded[cast_shadow] *= 0.4
 
     shaded_rgb = rgb_array.astype(np.float32)
     shaded_rgb *= shaded[..., None]
