@@ -36,7 +36,7 @@ Then open `out/land-cover-map-3d.png`.
 
 ## What is included
 
-- `Python/generate_map.py` / `Python/map_utils.py` — the export tool: resolves an area of interest (country or custom AOI), streams matching Sentinel-2 land cover tiles and Copernicus DEM elevation tiles directly from their remote sources (no bulk local download), and renders a hillshade-blended, legended PNG. Scales to any country size, including antimeridian-crossing ones like Russia.
+- `Python/generate_map.py` / `Python/map_utils.py` — the export tool: resolves an area of interest (country or custom AOI), streams matching Sentinel-2 land cover tiles and Copernicus DEM elevation tiles directly from their remote sources (no bulk local download), and renders a hillshade-blended, legended PNG with real cast shadows (terrain occluding the sun darkens what's behind it, not just each pixel's own slope/aspect). Scales to any country size, including antimeridian-crossing ones like Russia.
 - `.github/workflows/generate-map.yml` — GitHub Actions workflow that runs the export tool on demand, with an optional step to email the result via Gmail.
 - `docs/index.html` / `docs/styles.css` — the GitHub Pages UI: a full-viewport MapLibre map for drawing or previewing an AOI, and a floating panel to configure and trigger a run, track it live, and get to the download.
 - `cloudflare-worker/` — a small Cloudflare Worker that holds a repo-scoped GitHub token server-side and proxies just the `workflow_dispatch` call, so visitors to the web UI never need a GitHub token of their own (rate-limited to guard the repo's own Actions quota).
