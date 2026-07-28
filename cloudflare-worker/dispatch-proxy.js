@@ -13,11 +13,29 @@ const ALLOWED_ORIGIN = "https://dbishal13.github.io";
 const ALLOWED_INPUT_KEYS = ["country_code", "aoi_geojson", "output_format", "mode", "aggregate", "email", "title"];
 const PER_IP_LIMIT_PER_HOUR = 5;
 const GLOBAL_LIMIT_PER_DAY = 50;
+// email triggers a real side effect against a third party (an inbox that
+// isn't necessarily the caller's own), so it gets its own, stricter budget
+// independent of the general dispatch limits above.
+const EMAIL_PER_IP_LIMIT_PER_HOUR = 2;
+const EMAIL_GLOBAL_LIMIT_PER_DAY = 10;
 
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") return corsPreflightResponse();
     if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
+
+    // CORS headers only stop a *browser* from reading a cross-origin response;
+    // they don't stop a direct request (curl, a script) from reaching this
+    // Worker at all. This check rejects anything not claiming to come from
+    // the docs site -- it stops casual/browser-based misuse, but a scripted
+    // caller can still set its own Origin header to match, same as any
+    // Origin check on a public, unauthenticated endpoint. Real bot
+    // resistance would need something like Cloudflare Turnstile; not worth
+    // the added complexity for a low-traffic hobby project right now.
+    const origin = request.headers.get("Origin");
+    if (origin !== ALLOWED_ORIGIN) {
+      return jsonResponse({ error: "Forbidden origin." }, 403);
+    }
 
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
@@ -41,6 +59,17 @@ export default {
     const inputs = {};
     for (const key of ALLOWED_INPUT_KEYS) {
       inputs[key] = typeof body[key] === "string" ? body[key] : "";
+    }
+
+    if (inputs.email) {
+      const emailGlobalOk = await consumeQuota(env, "email-global:" + dayKey(), EMAIL_GLOBAL_LIMIT_PER_DAY, 60 * 60 * 24);
+      if (!emailGlobalOk) {
+        return jsonResponse({ error: "Email delivery has hit its daily limit. Try again tomorrow, or leave the email field blank." }, 429);
+      }
+      const emailIpOk = await consumeQuota(env, "email-ip:" + ip, EMAIL_PER_IP_LIMIT_PER_HOUR, 60 * 60);
+      if (!emailIpOk) {
+        return jsonResponse({ error: "Too many emailed runs from this IP. Wait a bit, or leave the email field blank." }, 429);
+      }
     }
 
     const ghResponse = await fetch(
