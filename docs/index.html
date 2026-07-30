@@ -10,6 +10,8 @@
 <body>
   <div id="aoi-map"></div>
 
+  <button id="panel-toggle" type="button" aria-label="Hide panel" title="Hide panel">✕</button>
+
   <main>
     <h1>3D Land Cover Map Generator</h1>
     <p>Pick an area on the map, or use the fields below, then generate a land cover export via GitHub Actions.</p>
@@ -180,6 +182,20 @@
     const artifactsEl = document.getElementById("run-artifacts");
     const aoiTypeSelect = document.getElementById("aoi-type");
     const aoiParseStatusEl = document.getElementById("aoi-parse-status");
+
+    // --- Mobile panel toggle ---
+    // On narrow viewports the panel spans nearly the full width and hides the
+    // map underneath it, so give mobile visitors a way to collapse it and see
+    // (or draw on) the map. Open by default; irrelevant above the breakpoint
+    // in styles.css, where the toggle button is hidden and the panel always shows.
+    const panelToggle = document.getElementById("panel-toggle");
+    const panelEl = document.querySelector("main");
+    panelToggle.addEventListener("click", () => {
+      const hidden = panelEl.classList.toggle("panel-hidden");
+      panelToggle.textContent = hidden ? "☰" : "✕";
+      panelToggle.setAttribute("aria-label", hidden ? "Show panel" : "Hide panel");
+      panelToggle.title = hidden ? "Show panel" : "Hide panel";
+    });
 
     document.querySelector("form").addEventListener("submit", (event) => event.preventDefault());
 

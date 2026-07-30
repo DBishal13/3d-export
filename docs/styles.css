@@ -24,6 +24,38 @@ main {
   overflow-y: auto;
 }
 
+#panel-toggle {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  #panel-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2;
+    width: 52px;
+    height: 52px;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #111827;
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.15);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  main.panel-hidden {
+    display: none;
+  }
+}
+
 h1 {
   font-size: 1.5rem;
   margin-bottom: 12px;
@@ -116,6 +148,13 @@ button:disabled {
   font-size: 0.85rem;
   font-weight: 400;
   color: #6b7280;
+}
+
+/* The -8px pulls a hint up snug under a label (which has its own
+   margin-bottom). A button has no such margin, so a hint right after one
+   needs normal spacing instead or it reads as glued to the button. */
+button + .hint {
+  margin-top: 12px;
 }
 
 .footer-credit {
