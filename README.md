@@ -42,6 +42,10 @@ Then open `out/land-cover-map-3d.png`.
 - `cloudflare-worker/` — a small Cloudflare Worker that holds a repo-scoped GitHub token server-side and proxies just the `workflow_dispatch` call, so visitors to the web UI never need a GitHub token of their own (rate-limited to guard the repo's own Actions quota).
 - `requirements.txt` — Python dependencies for GIS raster processing.
 
+## Architecture
+
+![Architecture diagram](docs/architecture.png)
+
 ## Local usage
 
 1. Install dependencies:
