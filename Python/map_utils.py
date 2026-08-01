@@ -1,5 +1,6 @@
 import logging
 import math
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import List, Tuple
@@ -196,10 +197,19 @@ def find_land_cover_tile_urls(country_gdf: gpd.GeoDataFrame, year: int = None) -
     return [_sign_pc_href(href) for _, href in latest_by_tile.values()]
 
 
-def _sign_pc_href(href: str) -> str:
-    response = requests.get(PC_SAS_SIGN_URL, params={"href": href}, timeout=30)
-    response.raise_for_status()
-    return response.json()["href"]
+def _sign_pc_href(href: str, max_retries: int = 5) -> str:
+    """A large AOI (e.g. a big country) can need dozens of tiles signed back
+    to back, which trips the signing endpoint's per-caller rate limit (429).
+    Retry with exponential backoff, honoring Retry-After when it sends one.
+    """
+    for attempt in range(max_retries):
+        response = requests.get(PC_SAS_SIGN_URL, params={"href": href}, timeout=30)
+        if response.status_code == 429 and attempt < max_retries - 1:
+            wait = float(response.headers.get("Retry-After", 2**attempt))
+            time.sleep(wait)
+            continue
+        response.raise_for_status()
+        return response.json()["href"]
 
 
 def _dem_tile_id(lat: int, lon: int) -> str:
